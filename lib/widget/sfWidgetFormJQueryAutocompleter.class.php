@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -21,7 +21,7 @@
  * @package    symfony
  * @subpackage widget
  * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
- * @version    SVN: $Id: sfWidgetFormJQueryAutocompleter.class.php 15839 2009-02-27 05:40:57Z fabien $
+ * @version    SVN: $Id: sfWidgetFormJQueryAutocompleter.class.php 31062 2010-10-06 13:54:38Z fabien $
  */
 class sfWidgetFormJQueryAutocompleter extends sfWidgetFormInput
 {
@@ -43,7 +43,7 @@ class sfWidgetFormJQueryAutocompleter extends sfWidgetFormInput
   {
     $this->addRequiredOption('url');
     $this->addOption('value_callback');
-    $this->addOption('config', '{ }');
+    $this->addOption('config', '{ scrollHeight: 450, max: 20 }');
 
     // this is required as it can be used as a renderer class for sfWidgetFormChoice
     $this->addOption('choices');
@@ -60,6 +60,10 @@ class sfWidgetFormJQueryAutocompleter extends sfWidgetFormInput
    * @return string An HTML tag string
    *
    * @see sfWidgetForm
+   * http://stackoverflow.com/questions/3518368/jquery-autocomplete-request-caching-problem
+   *
+   * http://stackoverflow.com/questions/9942132/order-of-iteration-differs-in-ie9
+   * Datenaufbau: AufnNr|Status|Name "10005|2|Muster, Testtest (10005)"
    */
   public function render($name, $value = null, $attributes = array(), $errors = array())
   {
@@ -73,15 +77,27 @@ class sfWidgetFormJQueryAutocompleter extends sfWidgetFormInput
     jQuery("#%s")
     .autocomplete('%s', jQuery.extend({}, {
       dataType: 'json',
+      cacheLength: 0,
       parse:    function(data) {
         var parsed = [];
         for (key in data) {
-          parsed[parsed.length] = { data: [ data[key], key ], value: data[key], result: data[key] };
+          if (data[key].match(/\|/)) {
+            felder = data[key].split("|");
+            wert = felder[1]+'|'+felder[2];
+            parsed[parsed.length] = { data: [ wert, felder[0] ], value: wert, result: felder[2]};
+          } else {
+            parsed[parsed.length] = { data: [ data[key], key ], value: data[key], result: data[key] };
+          }
         }
         return parsed;
       }
     }, %s))
-    .result(function(event, data) { jQuery("#%s").val(data[1]); });
+    .result(function(event, data) { jQuery("#%s").val(data[1]); })
+    .keyup(function() {
+      if(this.value.length == 0) {
+        $('#%s').val('');
+      }
+    });
   });
 </script>
 EOF
@@ -89,6 +105,7 @@ EOF
       $this->generateId('autocomplete_'.$name),
       $this->getOption('url'),
       $this->getOption('config'),
+      $this->generateId($name),
       $this->generateId($name)
     );
   }

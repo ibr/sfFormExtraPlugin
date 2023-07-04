@@ -2,7 +2,7 @@
 
 /**
  * A widget of grouped choices.
- * 
+ *
  * @package     sfFormExtraPlugin
  * @subpackage  widget
  * @author      Kris Wallsmith <kris.wallsmith@symfony-project.com>
@@ -12,10 +12,10 @@ class sfWidgetFormPropelChoiceGrouped extends sfWidgetFormPropelChoice
 {
   /**
    * Available options:
-   * 
+   *
    *  * group_by_method:  A method on the current model that will return the
    *                      object the widget is grouped by (i.e. getAuthor)
-   * 
+   *
    * @see sfWidget
    */
   protected function configure($options = array(), $attributes = array())
@@ -73,18 +73,19 @@ class sfWidgetFormPropelChoiceGrouped extends sfWidgetFormPropelChoice
     foreach ($objects as $object)
     {
       $parent = $object->$methodParent($this->getOption('connection'));
-      if (!method_exists($parent, '__toString'))
+      if (is_object($parent) && !method_exists($parent, '__toString'))
       {
         throw new RuntimeException(sprintf('Class "%s" must implement a "__toString" method to be rendered in a "%s" widget', get_class($parent), __CLASS__));
       }
 
-      $parentValue = (string) $parent;
-      if (!isset($choices[$parentValue]))
-      {
-        $choices[$parentValue] = array();
-      }
+      if ($parentValue = (string) $parent) {
+          if (!isset($choices[$parentValue]))
+          {
+            $choices[$parentValue] = array();
+          }
 
-      $choices[$parentValue][$object->$methodKey()] = $object->$methodValue();
+          $choices[$parentValue][$object->$methodKey()] = $object->$methodValue();
+      }
     }
 
     return $choices;
